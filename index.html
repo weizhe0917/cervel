@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>成绩总平均计算器</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7f6;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        .container {
+            max-width: 600px;
+            background: #fff;
+            margin: 0 auto;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+        h2 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #7f8c8d;
+            font-size: 14px;
+            margin-bottom: 25px;
+        }
+        /* 班级切换选项卡样式 */
+        .tab-group {
+            display: flex;
+            justify-content: space-between;
+            gap: 5px;
+            margin-bottom: 20px;
+            background-color: #edf2f7;
+            padding: 5px;
+            border-radius: 8px;
+        }
+        .tab-btn {
+            flex: 1;
+            padding: 10px 5px;
+            border: none;
+            background: transparent;
+            font-weight: bold;
+            font-size: 14px;
+            color: #64748b;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+        .tab-btn.active {
+            background-color: #3498db;
+            color: white;
+            box-shadow: 0 2px 5px rgba(52, 152, 219, 0.3);
+        }
+        .class-info-badge {
+            text-align: center;
+            font-weight: 600;
+            color: #2c3e50;
+            background-color: #e2e8f0;
+            padding: 8px;
+            border-radius: 6px;
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+        .subject-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #edf2f7;
+        }
+        .subject-name {
+            font-weight: 600;
+            width: 130px;
+        }
+        .subject-info {
+            color: #95a5a6;
+            font-size: 13px;
+            width: 70px;
+        }
+        .input-group {
+            display: flex;
+            align-items: center;
+        }
+        .input-group input {
+            width: 80px;
+            padding: 8px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            text-align: center;
+            font-size: 15px;
+        }
+        .input-group input:focus {
+            border-color: #3498db;
+            outline: none;
+        }
+        .unit {
+            margin-left: 8px;
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+        button.calc-btn {
+            width: 100%;
+            padding: 12px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 25px;
+            transition: background 0.2s;
+        }
+        button.calc-btn:hover {
+            background-color: #2980b9;
+        }
+        .result-box {
+            margin-top: 25px;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            display: none;
+        }
+        .score-display {
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .status-display {
+            font-size: 18px;
+            font-weight: bold;
+        }
+        /* 状态颜色 */
+        .pass { background-color: #edf7ed; color: #1e4620; }
+        .probation { background-color: #fff3cd; color: #664d03; }
+        .fail { background-color: #fde8e8; color: #9b1c1c; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>成绩总平均计算器</h2>
+    <div class="subtitle">（不计体育、心辅）</div>
+
+    <!-- 班级切换按钮（新增商美班） -->
+    <div class="tab-group">
+        <button class="tab-btn active" onclick="switchClass('COMMERCE', this)">商科班</button>
+        <button class="tab-btn" onclick="switchClass('ARTS_COMMERCE', this)">文商班</button>
+        <button class="tab-btn" onclick="switchClass('SCIENCE', this)">理科班</button>
+        <button class="tab-btn" onclick="switchClass('ART_DESIGN', this)">商美班</button>
+    </div>
+    
+    <!-- 班级信息提示 -->
+    <div class="class-info-badge" id="class-info">加载中...</div>
+
+    <!-- 动态生成各科输入框 -->
+    <div id="subjects-container"></div>
+
+    <button class="calc-btn" onclick="calculateTotal()">开始计算总平均</button>
+
+    <!-- 结果区域 -->
+    <div id="result" class="result-box">
+        <div class="score-display" id="average-score">0.00</div>
+        <div class="status-display" id="status-text"></div>
+    </div>
+</div>
+
+<script>
+    // 配置各班级科目与节数 (均已扣除体育和心辅)
+    const classData = {
+        'COMMERCE': {
+            name: '商科班',
+            subjects: [
+                { name: '会计学', periods: 6 },
+                { name: '华文', periods: 5 },
+                { name: '国文', periods: 5 },
+                { name: '英文', periods: 5 },
+                { name: '高数', periods: 5 },
+                { name: '经济学', periods: 5 },
+                { name: '商业学', periods: 4 },
+                { name: '电脑', periods: 2 },
+                { name: '美术', periods: 2 }
+            ]
+        },
+        'ARTS_COMMERCE': {
+            name: '文商班',
+            subjects: [
+                { name: '华文', periods: 5 },
+                { name: '国文', periods: 5 },
+                { name: '英文', periods: 5 },
+                { name: '高数', periods: 5 },
+                { name: '会计学', periods: 5 },
+                { name: '地理', periods: 4 },
+                { name: '历史', periods: 3 },
+                { name: '商业学', periods: 3 },
+                { name: '电脑', periods: 2 },
+                { name: '美术', periods: 2 }
+            ]
+        },
+        'SCIENCE': {
+            name: '理科班',
+            subjects: [
+                { name: '高数 II', periods: 6 },
+                { name: '华文', periods: 5 },
+                { name: '国文', periods: 5 },
+                { name: '英文', periods: 5 },
+                { name: '生物', periods: 5 },
+                { name: '化学', periods: 5 },
+                { name: '物理', periods: 4 },
+                { name: '电脑', periods: 2 }
+            ]
+        },
+        'ART_DESIGN': {
+            name: '商美班',
+            subjects: [
+                { name: '华文', periods: 5 },
+                { name: '国文', periods: 5 },
+                { name: '英文', periods: 5 },
+                { name: '高数', periods: 5 },
+                { name: '素描', periods: 3 },
+                { name: '水墨书法', periods: 3 },
+                { name: '美术赏析', periods: 3 },
+                { name: '绘画', periods: 3 },
+                { name: '基础设计', periods: 3 },
+                { name: '字体学', periods: 2 },
+                { name: '电脑绘图', periods: 2 }
+            ]
+        }
+    };
+
+    let currentClassKey = 'COMMERCE';
+    let currentSubjects = [];
+    let currentTotalPeriods = 0;
+
+    // 切换班级函数
+    function switchClass(classKey, element) {
+        currentClassKey = classKey;
+        
+        // 更新按钮样式
+        const buttons = document.querySelectorAll('.tab-btn');
+        buttons.forEach(btn => btn.classList.remove('active'));
+        if (element) {
+            element.classList.add('active');
+        }
+
+        // 隐藏上一次计算的结果
+        document.getElementById('result').style.display = 'none';
+
+        // 渲染新班级的输入框
+        renderSubjects();
+    }
+
+    // 渲染科目输入区域
+    function renderSubjects() {
+        const classInfo = classData[currentClassKey];
+        currentSubjects = classInfo.subjects;
+        currentTotalPeriods = currentSubjects.reduce((sum, sub) => sum + sub.periods, 0);
+
+        document.getElementById('class-info').innerText = `当前：${classInfo.name} | 计算总节数：${currentTotalPeriods} 节`;
+
+        const container = document.getElementById('subjects-container');
+        container.innerHTML = '';
+
+        currentSubjects.forEach((sub, index) => {
+            container.innerHTML += `
+                <div class="subject-row">
+                    <span class="subject-name">${sub.name}</span>
+                    <span class="subject-info">(${sub.periods} 节)</span>
+                    <div class="input-group">
+                        <input type="number" id="sub-${index}" min="0" max="100" placeholder="0-100" required>
+                        <span class="unit">分</span>
+                    </div>
+                </div>
+            `;
+        });
+    }
+
+    function calculateTotal() {
+        let totalWeightedScore = 0;
+        let isValid = true;
+
+        currentSubjects.forEach((sub, index) => {
+            const inputVal = document.getElementById(`sub-${index}`).value;
+            const score = parseFloat(inputVal);
+
+            if (isNaN(score) || score < 0 || score > 100) {
+                alert(`请为【${sub.name}】输入有效的 0 - 100 之间的分数。`);
+                isValid = false;
+                return;
+            }
+            // 加权分 = 分数 * 节数
+            totalWeightedScore += score * sub.periods;
+        });
+
+        if (!isValid) return;
+
+        // 计算总平均
+        const average = totalWeightedScore / currentTotalPeriods;
+        
+        const resultBox = document.getElementById('result');
+        const scoreDisplay = document.getElementById('average-score');
+        const statusDisplay = document.getElementById('status-text');
+        
+        resultBox.style.display = 'block';
+        scoreDisplay.innerText = average.toFixed(2) + " 分";
+
+        // 判定规则：>= 58 及格，44 - 57.99 还行，< 44 未达标
+        resultBox.className = "result-box"; 
+        if (average >= 58) {
+            statusDisplay.innerText = "结果判定：及格";
+            resultBox.classList.add('pass');
+        } else if (average >= 44) {
+            statusDisplay.innerText = "结果判定：还行";
+            resultBox.classList.add('probation');
+        } else {
+            statusDisplay.innerText = "结果判定：未达标";
+            resultBox.classList.add('fail');
+        }
+    }
+
+    // 页面加载完成后默认初始化商科班
+    window.onload = function() {
+        renderSubjects();
+    };
+</script>
+
+</body>
+</html>
