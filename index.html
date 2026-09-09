@@ -2,47 +2,104 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>成绩计算器 - 日新独中</title>
     <style>
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
+            -webkit-tap-highlight-color: transparent;
         }
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             background-color: #f8fafc;
             color: #334155;
-            display: flex;
             min-height: 100vh;
-            overflow-x: hidden;
+            position: relative;
         }
 
-        /* 侧边栏：白色底色风格 */
-        .sidebar {
-            width: 260px;
-            background-color: #ffffff;
-            border-right: 1px solid #e2e8f0;
+        /* 顶栏：手机端固定顶部导航 */
+        .top-navbar {
+            height: 56px;
+            background: #ffffff;
+            border-bottom: 1px solid #e2e8f0;
             display: flex;
-            flex-direction: column;
-            padding: 16px 12px;
-            flex-shrink: 0;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            position: relative;
+            align-items: center;
+            padding: 0 16px;
+            position: sticky;
+            top: 0;
             z-index: 10;
         }
 
-        /* 侧边栏收起状态 */
-        .sidebar.collapsed {
-            width: 0;
-            padding-left: 0;
-            padding-right: 0;
-            border-right-color: transparent;
-            overflow: hidden;
+        .top-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #0f172a;
+            margin-left: 12px;
         }
 
-        /* 侧边栏顶部布局 */
+        /* 图标按钮 */
+        .icon-btn {
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #475569;
+            transition: background 0.2s;
+        }
+
+        .icon-btn:active {
+            background-color: #f1f5f9;
+        }
+
+        /* 黑色半透明遮罩层（点击可关闭侧边栏） */
+        .sidebar-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: rgba(15, 23, 42, 0.4);
+            backdrop-filter: blur(2px);
+            z-index: 99;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+
+        .sidebar-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* 侧边栏：抽屉式悬浮覆盖，不挤压主界面 */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 280px;
+            height: 100vh;
+            background-color: #ffffff;
+            z-index: 100;
+            box-shadow: 4px 0 24px rgba(0,0,0,0.15);
+            display: flex;
+            flex-direction: column;
+            padding: 16px 12px;
+            transform: translateX(-100%); /* 默认隐藏在屏幕左侧外部 */
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* 侧边栏展开状态 */
+        .sidebar.active {
+            transform: translateX(0); /* 滑入屏幕 */
+        }
+
         .sidebar-header-row {
             display: flex;
             align-items: center;
@@ -52,42 +109,9 @@
         }
 
         .sidebar-title {
-            font-size: 15px;
+            font-size: 16px;
             font-weight: 700;
             color: #0f172a;
-            white-space: nowrap;
-        }
-
-        /* ChatGPT / Gemini 风格图标按钮 */
-        .icon-btn {
-            background: transparent;
-            border: none;
-            cursor: pointer;
-            width: 36px;
-            height: 36px;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #64748b;
-            transition: background 0.2s, color 0.2s;
-        }
-
-        .icon-btn:hover {
-            background-color: #f1f5f9;
-            color: #0f172a;
-        }
-
-        /* 悬浮在主界面的展开按钮（侧边栏收起时显示） */
-        .sidebar-expand-btn {
-            position: fixed;
-            top: 16px;
-            left: 16px;
-            z-index: 9;
-            background: #ffffff;
-            border: 1px solid #e2e8f0;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
-            display: none;
         }
 
         /* 导航菜单 */
@@ -95,26 +119,24 @@
             list-style: none;
             display: flex;
             flex-direction: column;
-            gap: 4px;
+            gap: 6px;
         }
 
         .nav-item {
-            padding: 10px 12px;
-            font-size: 14px;
+            padding: 12px 14px;
+            font-size: 15px;
             font-weight: 500;
             cursor: pointer;
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
             border-radius: 8px;
             transition: all 0.2s;
             color: #475569;
-            white-space: nowrap;
         }
 
-        .nav-item:hover {
+        .nav-item:active {
             background-color: #f8fafc;
-            color: #0f172a;
         }
 
         .nav-item.active {
@@ -123,51 +145,49 @@
             font-weight: 600;
         }
 
-        /* 主内容区域 */
-        .main-content {
-            flex: 1;
-            padding: 40px 20px;
-            overflow-y: auto;
-            display: flex;
-            justify-content: center;
-            transition: all 0.3s ease;
+        /* 主内容容器 */
+        .main-container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px 16px 40px 16px;
         }
 
-        .container {
-            width: 100%;
-            max-width: 650px;
+        .card {
             background: #ffffff;
-            padding: 30px;
+            padding: 20px 16px;
             border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.03);
             border: 1px solid #f1f5f9;
-            height: fit-content;
         }
-        
+
         h2 {
             text-align: center;
             color: #0f172a;
+            font-size: 20px;
             margin-bottom: 4px;
         }
+
         .subtitle {
             text-align: center;
             color: #64748b;
-            font-size: 14px;
-            margin-bottom: 25px;
+            font-size: 13px;
+            margin-bottom: 20px;
         }
 
+        /* 班级切换标签（手机端滑动兼容） */
         .tab-group {
             display: flex;
-            gap: 8px;
-            margin-bottom: 20px;
+            gap: 6px;
+            margin-bottom: 16px;
             background-color: #f1f5f9;
-            padding: 6px;
+            padding: 4px;
             border-radius: 8px;
         }
+
         .tab-btn {
             flex: 1;
-            padding: 9px 5px;
-            border: 1px solid transparent;
+            padding: 8px 0;
+            border: none;
             background: transparent;
             font-weight: 600;
             font-size: 13px;
@@ -175,11 +195,13 @@
             cursor: pointer;
             border-radius: 6px;
             transition: all 0.2s;
+            text-align: center;
         }
+
         .tab-btn.active {
             background-color: #0284c7;
             color: white;
-            box-shadow: 0 2px 5px rgba(2, 132, 199, 0.25);
+            box-shadow: 0 2px 5px rgba(2, 132, 199, 0.2);
         }
 
         .class-info-badge {
@@ -189,84 +211,98 @@
             background-color: #f1f5f9;
             padding: 8px;
             border-radius: 6px;
-            font-size: 14px;
-            margin-bottom: 20px;
+            font-size: 13px;
+            margin-bottom: 16px;
         }
 
+        /* 表单输入行 */
         .subject-row, .annual-row {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 10px 0;
+            padding: 12px 0;
             border-bottom: 1px solid #f1f5f9;
         }
+
         .subject-name, .annual-name {
             font-weight: 600;
-            width: 150px;
+            font-size: 15px;
+            color: #334155;
         }
+
         .subject-info, .annual-weight {
             color: #94a3b8;
-            font-size: 13px;
-            width: 80px;
+            font-size: 12px;
+            margin-left: 6px;
         }
+
         .input-group {
             display: flex;
             align-items: center;
         }
+
         .input-group input {
-            width: 85px;
+            width: 75px;
             padding: 8px;
             border: 1px solid #cbd5e1;
             border-radius: 6px;
             text-align: center;
-            font-size: 14px;
-        }
-        .input-group input:focus {
-            border-color: #0284c7;
+            font-size: 15px;
             outline: none;
         }
-        .unit {
-            margin-left: 8px;
-            color: #64748b;
-            font-size: 14px;
+
+        .input-group input:focus {
+            border-color: #0284c7;
         }
 
+        .unit {
+            margin-left: 6px;
+            color: #64748b;
+            font-size: 13px;
+        }
+
+        /* 提交按钮 */
         button.calc-btn {
             width: 100%;
-            padding: 12px;
+            padding: 14px;
             background-color: #0284c7;
             color: white;
             border: none;
-            border-radius: 6px;
+            border-radius: 8px;
             font-size: 16px;
             font-weight: bold;
             cursor: pointer;
-            margin-top: 25px;
+            margin-top: 20px;
             transition: background 0.2s;
         }
-        button.calc-btn:hover {
+
+        button.calc-btn:active {
             background-color: #0369a1;
         }
 
+        /* 结果框 */
         .result-box {
-            margin-top: 25px;
-            padding: 20px;
+            margin-top: 20px;
+            padding: 16px;
             border-radius: 8px;
             text-align: center;
             display: none;
         }
+
         .score-display {
-            font-size: 32px;
+            font-size: 30px;
             font-weight: bold;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
         }
+
         .status-display {
-            font-size: 18px;
+            font-size: 16px;
             font-weight: bold;
         }
+
         .status-desc {
-            font-size: 13px;
-            margin-top: 5px;
+            font-size: 12px;
+            margin-top: 4px;
             opacity: 0.85;
         }
 
@@ -277,15 +313,15 @@
 
         .footer {
             text-align: center;
-            margin-top: 30px;
+            margin-top: 24px;
             font-size: 12px;
             color: #94a3b8;
-            letter-spacing: 0.5px;
         }
 
         .page-section {
             display: none;
         }
+
         .page-section.active {
             display: block;
         }
@@ -293,26 +329,32 @@
 </head>
 <body>
 
-<!-- 独立展开按钮（收起侧栏时出现） -->
-<button class="icon-btn sidebar-expand-btn" id="expandBtn" onclick="toggleSidebar()" title="展开侧边栏">
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
-</button>
+<!-- 顶栏导航 -->
+<div class="top-navbar">
+    <button class="icon-btn" onclick="openSidebar()" title="打开菜单">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+    </button>
+    <span class="top-title" id="page-title">期考总平均</span>
+</div>
 
-<!-- 白色侧边栏 -->
+<!-- 遮罩层 -->
+<div class="sidebar-overlay" id="overlay" onclick="closeSidebar()"></div>
+
+<!-- 侧边栏 (抽屉模式) -->
 <div class="sidebar" id="sidebar">
     <div class="sidebar-header-row">
         <span class="sidebar-title">日新独中成绩系统</span>
-        <button class="icon-btn" onclick="toggleSidebar()" title="收起侧边栏">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/></svg>
+        <button class="icon-btn" onclick="closeSidebar()" title="关闭菜单">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
         </button>
     </div>
 
     <ul class="nav-list">
-        <li class="nav-item active" onclick="switchPage('single', this)">
+        <li class="nav-item active" onclick="switchPage('single', '期考总平均', this)">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
             期考总平均
         </li>
-        <li class="nav-item" onclick="switchPage('annual', this)">
+        <li class="nav-item" onclick="switchPage('annual', '全年总平均', this)">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
             全年总平均
         </li>
@@ -320,13 +362,13 @@
 </div>
 
 <!-- 主内容区 -->
-<div class="main-content">
-    <div class="container">
+<div class="main-container">
+    <div class="card">
         
-        <!-- ================= 页面 1：单次期考总平均 ================= -->
+        <!-- ================= 页面 1：期考总平均 ================= -->
         <div id="page-single" class="page-section active">
             <h2>期考总平均计算器</h2>
-            <div class="subtitle">（用于算单次考试，已扣除体育、心辅）</div>
+            <div class="subtitle">（算单次考试，已扣除体育、心辅）</div>
 
             <div class="tab-group">
                 <button class="tab-btn active" onclick="switchClass('COMMERCE', this)">商科班</button>
@@ -353,8 +395,10 @@
             <div class="subtitle">（综合三期考试、多元评量与作业）</div>
 
             <div class="annual-row">
-                <span class="annual-name">第一期考</span>
-                <span class="annual-weight">(占比 20%)</span>
+                <div>
+                    <span class="annual-name">第一期考</span>
+                    <span class="annual-weight">(20%)</span>
+                </div>
                 <div class="input-group">
                     <input type="number" id="term1" min="0" max="100" placeholder="0-100">
                     <span class="unit">分</span>
@@ -362,8 +406,10 @@
             </div>
 
             <div class="annual-row">
-                <span class="annual-name">第二期考</span>
-                <span class="annual-weight">(占比 20%)</span>
+                <div>
+                    <span class="annual-name">第二期考</span>
+                    <span class="annual-weight">(20%)</span>
+                </div>
                 <div class="input-group">
                     <input type="number" id="term2" min="0" max="100" placeholder="0-100">
                     <span class="unit">分</span>
@@ -371,8 +417,10 @@
             </div>
 
             <div class="annual-row">
-                <span class="annual-name">第三期考</span>
-                <span class="annual-weight">(占比 30%)</span>
+                <div>
+                    <span class="annual-name">第三期考</span>
+                    <span class="annual-weight">(30%)</span>
+                </div>
                 <div class="input-group">
                     <input type="number" id="term3" min="0" max="100" placeholder="0-100">
                     <span class="unit">分</span>
@@ -380,8 +428,10 @@
             </div>
 
             <div class="annual-row">
-                <span class="annual-name">多元评量</span>
-                <span class="annual-weight">(占比 20%)</span>
+                <div>
+                    <span class="annual-name">多元评量</span>
+                    <span class="annual-weight">(20%)</span>
+                </div>
                 <div class="input-group">
                     <input type="number" id="assessment" min="0" max="100" placeholder="0-100">
                     <span class="unit">分</span>
@@ -389,8 +439,10 @@
             </div>
 
             <div class="annual-row">
-                <span class="annual-name">作业</span>
-                <span class="annual-weight">(占比 10%)</span>
+                <div>
+                    <span class="annual-name">作业</span>
+                    <span class="annual-weight">(10%)</span>
+                </div>
                 <div class="input-group">
                     <input type="number" id="homework" min="0" max="100" placeholder="0-100">
                     <span class="unit">分</span>
@@ -406,35 +458,36 @@
             </div>
         </div>
 
-        <!-- 署名 -->
         <div class="footer">适用于2026年日新独中 made by weizhe</div>
     </div>
 </div>
 
 <script>
-    // 侧栏收起 / 展开控制器
-    function toggleSidebar() {
-        const sidebar = document.getElementById('sidebar');
-        const expandBtn = document.getElementById('expandBtn');
-        
-        sidebar.classList.toggle('collapsed');
-        if (sidebar.classList.contains('collapsed')) {
-            expandBtn.style.display = 'flex';
-        } else {
-            expandBtn.style.display = 'none';
-        }
+    // 抽屉侧边栏开关逻辑
+    function openSidebar() {
+        document.getElementById('sidebar').classList.add('active');
+        document.getElementById('overlay').classList.add('active');
     }
 
-    // 切换页面
-    function switchPage(pageType, element) {
+    function closeSidebar() {
+        document.getElementById('sidebar').classList.remove('active');
+        document.getElementById('overlay').classList.remove('active');
+    }
+
+    // 页面切换
+    function switchPage(pageType, titleText, element) {
         document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
         element.classList.add('active');
 
         document.querySelectorAll('.page-section').forEach(sec => sec.classList.remove('active'));
         document.getElementById(`page-${pageType}`).classList.add('active');
+
+        document.getElementById('page-title').innerText = titleText;
+        
+        closeSidebar(); // 选中后自动关闭侧边栏
     }
 
-    // 高中班级数据
+    // 班级数据
     const classData = {
         'COMMERCE': {
             name: '商科班',
@@ -523,8 +576,10 @@
         currentSubjects.forEach((sub, index) => {
             container.innerHTML += `
                 <div class="subject-row">
-                    <span class="subject-name">${sub.name}</span>
-                    <span class="subject-info">(${sub.periods} 节)</span>
+                    <div>
+                        <span class="subject-name">${sub.name}</span>
+                        <span class="subject-info">(${sub.periods}节)</span>
+                    </div>
                     <div class="input-group">
                         <input type="number" id="sub-${index}" min="0" max="100" placeholder="0-100">
                         <span class="unit">分</span>
@@ -534,7 +589,7 @@
         });
     }
 
-    // 1. 计算期考总平均
+    // 1. 期考总平均
     function calculateSingleTotal() {
         let totalWeightedScore = 0;
         let isValid = true;
@@ -574,7 +629,7 @@
         }
     }
 
-    // 2. 计算全年总平均
+    // 2. 全年总平均
     function calculateAnnualTotal() {
         const t1 = parseFloat(document.getElementById('term1').value);
         const t2 = parseFloat(document.getElementById('term2').value);
@@ -604,11 +659,11 @@
             resultBox.classList.add('pass');
         } else if (finalScore >= 50.00) {
             statusDisplay.innerText = "判定结果：特准升级 (1)";
-            statusDesc.innerText = "需操行 C 或以上，且累计多元发展点数（高中 15 点）";
+            statusDesc.innerText = "需操行 C 或以上，且累计多元发展点数（初中 10 点 / 高中 15 点）";
             resultBox.classList.add('probation1');
         } else if (finalScore >= 44.00) {
             statusDisplay.innerText = "判定结果：特准升级 (2)";
-            statusDesc.innerText = "需操行 C 或以上，且累计多元发展点数（高中 20 点）";
+            statusDesc.innerText = "需操行 C 或以上，且累计多元发展点数（初中 15 点 / 高中 20 点）";
             resultBox.classList.add('probation2');
         } else {
             statusDisplay.innerText = "判定结果：留级";
