@@ -3,112 +3,238 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>成绩总平均计算器</title>
+    <title>成绩计算器 - 日新独中</title>
     <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f4f7f6;
+        * {
+            box-sizing: border-box;
             margin: 0;
-            padding: 20px;
-            color: #333;
+            padding: 0;
         }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f8fafc;
+            color: #334155;
+            display: flex;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* 侧边栏：白色底色风格 */
+        .sidebar {
+            width: 260px;
+            background-color: #ffffff;
+            border-right: 1px solid #e2e8f0;
+            display: flex;
+            flex-direction: column;
+            padding: 16px 12px;
+            flex-shrink: 0;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            z-index: 10;
+        }
+
+        /* 侧边栏收起状态 */
+        .sidebar.collapsed {
+            width: 0;
+            padding-left: 0;
+            padding-right: 0;
+            border-right-color: transparent;
+            overflow: hidden;
+        }
+
+        /* 侧边栏顶部布局 */
+        .sidebar-header-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            padding: 0 8px;
+        }
+
+        .sidebar-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: #0f172a;
+            white-space: nowrap;
+        }
+
+        /* ChatGPT / Gemini 风格图标按钮 */
+        .icon-btn {
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #64748b;
+            transition: background 0.2s, color 0.2s;
+        }
+
+        .icon-btn:hover {
+            background-color: #f1f5f9;
+            color: #0f172a;
+        }
+
+        /* 悬浮在主界面的展开按钮（侧边栏收起时显示） */
+        .sidebar-expand-btn {
+            position: fixed;
+            top: 16px;
+            left: 16px;
+            z-index: 9;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+            display: none;
+        }
+
+        /* 导航菜单 */
+        .nav-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .nav-item {
+            padding: 10px 12px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-radius: 8px;
+            transition: all 0.2s;
+            color: #475569;
+            white-space: nowrap;
+        }
+
+        .nav-item:hover {
+            background-color: #f8fafc;
+            color: #0f172a;
+        }
+
+        .nav-item.active {
+            background-color: #f0f9ff;
+            color: #0284c7;
+            font-weight: 600;
+        }
+
+        /* 主内容区域 */
+        .main-content {
+            flex: 1;
+            padding: 40px 20px;
+            overflow-y: auto;
+            display: flex;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
         .container {
-            max-width: 600px;
-            background: #fff;
-            margin: 0 auto;
+            width: 100%;
+            max-width: 650px;
+            background: #ffffff;
             padding: 30px;
             border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+            border: 1px solid #f1f5f9;
+            height: fit-content;
         }
+        
         h2 {
             text-align: center;
-            color: #2c3e50;
-            margin-bottom: 5px;
+            color: #0f172a;
+            margin-bottom: 4px;
         }
         .subtitle {
             text-align: center;
-            color: #7f8c8d;
+            color: #64748b;
             font-size: 14px;
             margin-bottom: 25px;
         }
-        /* 班级切换选项卡样式 */
+
         .tab-group {
             display: flex;
-            justify-content: space-between;
-            gap: 5px;
+            gap: 8px;
             margin-bottom: 20px;
-            background-color: #edf2f7;
-            padding: 5px;
+            background-color: #f1f5f9;
+            padding: 6px;
             border-radius: 8px;
         }
         .tab-btn {
             flex: 1;
-            padding: 10px 5px;
-            border: none;
+            padding: 9px 5px;
+            border: 1px solid transparent;
             background: transparent;
-            font-weight: bold;
-            font-size: 14px;
+            font-weight: 600;
+            font-size: 13px;
             color: #64748b;
             cursor: pointer;
             border-radius: 6px;
-            transition: all 0.2s ease;
+            transition: all 0.2s;
         }
         .tab-btn.active {
-            background-color: #3498db;
+            background-color: #0284c7;
             color: white;
-            box-shadow: 0 2px 5px rgba(52, 152, 219, 0.3);
+            box-shadow: 0 2px 5px rgba(2, 132, 199, 0.25);
         }
+
         .class-info-badge {
             text-align: center;
             font-weight: 600;
-            color: #2c3e50;
-            background-color: #e2e8f0;
+            color: #1e293b;
+            background-color: #f1f5f9;
             padding: 8px;
             border-radius: 6px;
             font-size: 14px;
             margin-bottom: 20px;
         }
-        .subject-row {
+
+        .subject-row, .annual-row {
             display: flex;
             align-items: center;
             justify-content: space-between;
             padding: 10px 0;
-            border-bottom: 1px solid #edf2f7;
+            border-bottom: 1px solid #f1f5f9;
         }
-        .subject-name {
+        .subject-name, .annual-name {
             font-weight: 600;
-            width: 130px;
+            width: 150px;
         }
-        .subject-info {
-            color: #95a5a6;
+        .subject-info, .annual-weight {
+            color: #94a3b8;
             font-size: 13px;
-            width: 70px;
+            width: 80px;
         }
         .input-group {
             display: flex;
             align-items: center;
         }
         .input-group input {
-            width: 80px;
+            width: 85px;
             padding: 8px;
             border: 1px solid #cbd5e1;
             border-radius: 6px;
             text-align: center;
-            font-size: 15px;
+            font-size: 14px;
         }
         .input-group input:focus {
-            border-color: #3498db;
+            border-color: #0284c7;
             outline: none;
         }
         .unit {
             margin-left: 8px;
-            color: #7f8c8d;
+            color: #64748b;
             font-size: 14px;
         }
+
         button.calc-btn {
             width: 100%;
             padding: 12px;
-            background-color: #3498db;
+            background-color: #0284c7;
             color: white;
             border: none;
             border-radius: 6px;
@@ -119,8 +245,9 @@
             transition: background 0.2s;
         }
         button.calc-btn:hover {
-            background-color: #2980b9;
+            background-color: #0369a1;
         }
+
         .result-box {
             margin-top: 25px;
             padding: 20px;
@@ -131,61 +258,183 @@
         .score-display {
             font-size: 32px;
             font-weight: bold;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
         }
         .status-display {
             font-size: 18px;
             font-weight: bold;
         }
-        /* 状态颜色 */
-        .pass { background-color: #edf7ed; color: #1e4620; }
-        .probation { background-color: #fff3cd; color: #664d03; }
-        .fail { background-color: #fde8e8; color: #9b1c1c; }
+        .status-desc {
+            font-size: 13px;
+            margin-top: 5px;
+            opacity: 0.85;
+        }
 
-        /* 底部署名小字样式 */
+        .pass { background-color: #dcfce7; color: #14532d; }
+        .probation1 { background-color: #fef9c3; color: #713f12; }
+        .probation2 { background-color: #ffedd5; color: #7c2d12; }
+        .fail { background-color: #ffe4e6; color: #881337; }
+
         .footer {
             text-align: center;
-            margin-top: 25px;
+            margin-top: 30px;
             font-size: 12px;
             color: #94a3b8;
             letter-spacing: 0.5px;
+        }
+
+        .page-section {
+            display: none;
+        }
+        .page-section.active {
+            display: block;
         }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h2>成绩总平均计算器</h2>
-    <div class="subtitle">（不计体育、心辅）</div>
+<!-- 独立展开按钮（收起侧栏时出现） -->
+<button class="icon-btn sidebar-expand-btn" id="expandBtn" onclick="toggleSidebar()" title="展开侧边栏">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+</button>
 
-    <!-- 高中班级切换按钮 -->
-    <div class="tab-group">
-        <button class="tab-btn active" onclick="switchClass('COMMERCE', this)">商科班</button>
-        <button class="tab-btn" onclick="switchClass('ARTS_COMMERCE', this)">文商班</button>
-        <button class="tab-btn" onclick="switchClass('SCIENCE', this)">理科班</button>
-        <button class="tab-btn" onclick="switchClass('ART_DESIGN', this)">商美班</button>
-    </div>
-    
-    <!-- 班级信息提示 -->
-    <div class="class-info-badge" id="class-info">加载中...</div>
-
-    <!-- 动态生成各科输入框 -->
-    <div id="subjects-container"></div>
-
-    <button class="calc-btn" onclick="calculateTotal()">开始计算总平均</button>
-
-    <!-- 结果区域 -->
-    <div id="result" class="result-box">
-        <div class="score-display" id="average-score">0.00</div>
-        <div class="status-display" id="status-text"></div>
+<!-- 白色侧边栏 -->
+<div class="sidebar" id="sidebar">
+    <div class="sidebar-header-row">
+        <span class="sidebar-title">日新独中成绩系统</span>
+        <button class="icon-btn" onclick="toggleSidebar()" title="收起侧边栏">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/></svg>
+        </button>
     </div>
 
-    <!-- 底部署名 -->
-    <div class="footer">适用于2026年日新独中 Made by weizhe</div>
+    <ul class="nav-list">
+        <li class="nav-item active" onclick="switchPage('single', this)">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            期考总平均
+        </li>
+        <li class="nav-item" onclick="switchPage('annual', this)">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+            全年总平均
+        </li>
+    </ul>
+</div>
+
+<!-- 主内容区 -->
+<div class="main-content">
+    <div class="container">
+        
+        <!-- ================= 页面 1：单次期考总平均 ================= -->
+        <div id="page-single" class="page-section active">
+            <h2>期考总平均计算器</h2>
+            <div class="subtitle">（用于算单次考试，已扣除体育、心辅）</div>
+
+            <div class="tab-group">
+                <button class="tab-btn active" onclick="switchClass('COMMERCE', this)">商科班</button>
+                <button class="tab-btn" onclick="switchClass('ARTS_COMMERCE', this)">文商班</button>
+                <button class="tab-btn" onclick="switchClass('SCIENCE', this)">理科班</button>
+                <button class="tab-btn" onclick="switchClass('ART_DESIGN', this)">商美班</button>
+            </div>
+            
+            <div class="class-info-badge" id="class-info">加载中...</div>
+
+            <div id="subjects-container"></div>
+
+            <button class="calc-btn" onclick="calculateSingleTotal()">计算期考总平均</button>
+
+            <div id="result-single" class="result-box">
+                <div class="score-display" id="single-average-score">0.00</div>
+                <div class="status-display" id="single-status-text"></div>
+            </div>
+        </div>
+
+        <!-- ================= 页面 2：全年总平均 ================= -->
+        <div id="page-annual" class="page-section">
+            <h2>全年总平均计算器</h2>
+            <div class="subtitle">（综合三期考试、多元评量与作业）</div>
+
+            <div class="annual-row">
+                <span class="annual-name">第一期考</span>
+                <span class="annual-weight">(占比 20%)</span>
+                <div class="input-group">
+                    <input type="number" id="term1" min="0" max="100" placeholder="0-100">
+                    <span class="unit">分</span>
+                </div>
+            </div>
+
+            <div class="annual-row">
+                <span class="annual-name">第二期考</span>
+                <span class="annual-weight">(占比 20%)</span>
+                <div class="input-group">
+                    <input type="number" id="term2" min="0" max="100" placeholder="0-100">
+                    <span class="unit">分</span>
+                </div>
+            </div>
+
+            <div class="annual-row">
+                <span class="annual-name">第三期考</span>
+                <span class="annual-weight">(占比 30%)</span>
+                <div class="input-group">
+                    <input type="number" id="term3" min="0" max="100" placeholder="0-100">
+                    <span class="unit">分</span>
+                </div>
+            </div>
+
+            <div class="annual-row">
+                <span class="annual-name">多元评量</span>
+                <span class="annual-weight">(占比 20%)</span>
+                <div class="input-group">
+                    <input type="number" id="assessment" min="0" max="100" placeholder="0-100">
+                    <span class="unit">分</span>
+                </div>
+            </div>
+
+            <div class="annual-row">
+                <span class="annual-name">作业</span>
+                <span class="annual-weight">(占比 10%)</span>
+                <div class="input-group">
+                    <input type="number" id="homework" min="0" max="100" placeholder="0-100">
+                    <span class="unit">分</span>
+                </div>
+            </div>
+
+            <button class="calc-btn" onclick="calculateAnnualTotal()">计算全年总平均</button>
+
+            <div id="result-annual" class="result-box">
+                <div class="score-display" id="annual-average-score">0.00%</div>
+                <div class="status-display" id="annual-status-text"></div>
+                <div class="status-desc" id="annual-status-desc"></div>
+            </div>
+        </div>
+
+        <!-- 署名 -->
+        <div class="footer">适用于2026年日新独中 made by weizhe</div>
+    </div>
 </div>
 
 <script>
-    // 配置高中各班级科目与节数 (已扣除体育和心辅)
+    // 侧栏收起 / 展开控制器
+    function toggleSidebar() {
+        const sidebar = document.getElementById('sidebar');
+        const expandBtn = document.getElementById('expandBtn');
+        
+        sidebar.classList.toggle('collapsed');
+        if (sidebar.classList.contains('collapsed')) {
+            expandBtn.style.display = 'flex';
+        } else {
+            expandBtn.style.display = 'none';
+        }
+    }
+
+    // 切换页面
+    function switchPage(pageType, element) {
+        document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+        element.classList.add('active');
+
+        document.querySelectorAll('.page-section').forEach(sec => sec.classList.remove('active'));
+        document.getElementById(`page-${pageType}`).classList.add('active');
+    }
+
+    // 高中班级数据
     const classData = {
         'COMMERCE': {
             name: '商科班',
@@ -251,25 +500,16 @@
     let currentSubjects = [];
     let currentTotalPeriods = 0;
 
-    // 切换班级函数
     function switchClass(classKey, element) {
         currentClassKey = classKey;
-        
-        // 更新按钮样式
         const buttons = document.querySelectorAll('.tab-btn');
         buttons.forEach(btn => btn.classList.remove('active'));
-        if (element) {
-            element.classList.add('active');
-        }
+        if (element) element.classList.add('active');
 
-        // 隐藏上一次计算的结果
-        document.getElementById('result').style.display = 'none';
-
-        // 渲染新班级的输入框
+        document.getElementById('result-single').style.display = 'none';
         renderSubjects();
     }
 
-    // 渲染科目输入区域
     function renderSubjects() {
         const classInfo = classData[currentClassKey];
         currentSubjects = classInfo.subjects;
@@ -286,7 +526,7 @@
                     <span class="subject-name">${sub.name}</span>
                     <span class="subject-info">(${sub.periods} 节)</span>
                     <div class="input-group">
-                        <input type="number" id="sub-${index}" min="0" max="100" placeholder="0-100" required>
+                        <input type="number" id="sub-${index}" min="0" max="100" placeholder="0-100">
                         <span class="unit">分</span>
                     </div>
                 </div>
@@ -294,7 +534,8 @@
         });
     }
 
-    function calculateTotal() {
+    // 1. 计算期考总平均
+    function calculateSingleTotal() {
         let totalWeightedScore = 0;
         let isValid = true;
 
@@ -307,37 +548,75 @@
                 isValid = false;
                 return;
             }
-            // 加权分 = 分数 * 节数
             totalWeightedScore += score * sub.periods;
         });
 
         if (!isValid) return;
 
-        // 计算总平均
         const average = totalWeightedScore / currentTotalPeriods;
-        
-        const resultBox = document.getElementById('result');
-        const scoreDisplay = document.getElementById('average-score');
-        const statusDisplay = document.getElementById('status-text');
-        
+        const resultBox = document.getElementById('result-single');
+        const scoreDisplay = document.getElementById('single-average-score');
+        const statusDisplay = document.getElementById('single-status-text');
+
         resultBox.style.display = 'block';
         scoreDisplay.innerText = average.toFixed(2) + " 分";
 
-        // 判定规则：>= 58 及格，44 - 57.99 还行，< 44 未达标
         resultBox.className = "result-box"; 
         if (average >= 58) {
             statusDisplay.innerText = "结果判定：及格";
             resultBox.classList.add('pass');
         } else if (average >= 44) {
             statusDisplay.innerText = "结果判定：还行";
-            resultBox.classList.add('probation');
+            resultBox.classList.add('probation1');
         } else {
             statusDisplay.innerText = "结果判定：未达标";
             resultBox.classList.add('fail');
         }
     }
 
-    // 页面加载完成后默认初始化商科班
+    // 2. 计算全年总平均
+    function calculateAnnualTotal() {
+        const t1 = parseFloat(document.getElementById('term1').value);
+        const t2 = parseFloat(document.getElementById('term2').value);
+        const t3 = parseFloat(document.getElementById('term3').value);
+        const ass = parseFloat(document.getElementById('assessment').value);
+        const hw = parseFloat(document.getElementById('homework').value);
+
+        if ([t1, t2, t3, ass, hw].some(v => isNaN(v) || v < 0 || v > 100)) {
+            alert("请完整填写所有 5 项分数（0 - 100 之间）。");
+            return;
+        }
+
+        const finalScore = (t1 * 0.20) + (t2 * 0.20) + (t3 * 0.30) + (ass * 0.20) + (hw * 0.10);
+
+        const resultBox = document.getElementById('result-annual');
+        const scoreDisplay = document.getElementById('annual-average-score');
+        const statusDisplay = document.getElementById('annual-status-text');
+        const statusDesc = document.getElementById('annual-status-desc');
+
+        resultBox.style.display = 'block';
+        scoreDisplay.innerText = finalScore.toFixed(2) + "%";
+        resultBox.className = "result-box";
+
+        if (finalScore >= 58.00) {
+            statusDisplay.innerText = "判定结果：升级";
+            statusDesc.innerText = "条件：全年总平均达 58.00% 或以上（需操行 C 或以上）";
+            resultBox.classList.add('pass');
+        } else if (finalScore >= 50.00) {
+            statusDisplay.innerText = "判定结果：特准升级 (1)";
+            statusDesc.innerText = "需操行 C 或以上，且累计多元发展点数（高中 15 点）";
+            resultBox.classList.add('probation1');
+        } else if (finalScore >= 44.00) {
+            statusDisplay.innerText = "判定结果：特准升级 (2)";
+            statusDesc.innerText = "需操行 C 或以上，且累计多元发展点数（高中 20 点）";
+            resultBox.classList.add('probation2');
+        } else {
+            statusDisplay.innerText = "判定结果：留级";
+            statusDesc.innerText = "全年总平均低于 43.99% 或未达到特准升级条件";
+            resultBox.classList.add('fail');
+        }
+    }
+
     window.onload = function() {
         renderSubjects();
     };
